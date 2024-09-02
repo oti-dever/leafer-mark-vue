@@ -34,10 +34,9 @@ const props = defineProps<{
   mask?: boolean
 }>()
 
-const emit = defineEmits<{
-  onLoad: [() => object[]]
-}>()
-
+/**
+ * 获取打码数据
+ */
 function getMarks(): MarkItem[] {
   const json = appData?.getData()
   const res = []
@@ -55,37 +54,60 @@ function getMarks(): MarkItem[] {
   return res
 }
 
+/**
+ * 添加打码图标
+ */
+function addMark({ x, y, width }: { x: number, y: number, width: number}) {
+  appData?.add({
+    tag: 'Rect',
+    x,
+    y,
+    width,
+    height: width,
+    fill: {
+      type: 'image',
+      url: props.mark.icon,
+      mode: 'cover',
+    },
+    editable: true,
+    data: {
+      name: props.mark.name,
+    },
+  })
+}
+
+const markData = {
+  getMarks,
+  appData: () => appData,
+  clear: () => appData?.clear(),
+}
+
+const emit = defineEmits<{
+  onLoad: [typeof markData]
+}>()
+
 function onLoad(data: AppData) {
   appData = data
   cleanFunc.value = appData.clear
-  emit('onLoad', getMarks)
+  emit('onLoad', markData)
 }
 
+/**
+ * 双击删除打码
+ */
 function onElementDblClick(event: PointerEvent) {
   if (event.target.parent) {
     appData?.remove(event.target)
   }
 }
 
+/**
+ * 右键添加打码
+ */
 function onElementMenu(event: PointerEvent) {
   const width = props.iconWidth || 50
   if (!event.target.parent) {
-    appData?.add({
-      tag: 'Rect',
-      x: event.x - width / 2,
-      y: event.y - width / 2,
-      width: width,
-      height: width,
-      fill: {
-        type: 'image',
-        url: props.mark.icon,
-        mode: 'cover',
-      },
-      editable: true,
-      data: {
-        name: props.mark.name,
-      },
-    })
+    addMark({ x: event.x - width / 2, y: event.y - width / 2, width })
   }
 }
 
